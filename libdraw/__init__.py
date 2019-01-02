@@ -6,6 +6,7 @@ import timeit
 import PIL.Image as Img
 import PIL.ImageDraw as Draw
 import PIL.ImageFont as Font
+#import libcdraw
 
 class Frame(object):
     """docstring for Frame."""
