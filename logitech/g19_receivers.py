@@ -51,8 +51,8 @@ class State(object):
         '''
         if len(data) != 4 or data[0] != 2:
             raise ValueError("not a multimedia key packet: " + str(data))
-        empty = 0x400000
-        curVal = data[3] << 16 | data[2] << 8 | data[1]
+        empty = 0x000000
+        curVal = data[2] << 8 | data[1]
         keys = []
         while curVal != empty:
             foundAKey = False
@@ -62,9 +62,12 @@ class State(object):
                     keys.append(Data.gmKeys[val])
                     foundAKey = True
             if not foundAKey:
-                raise ValueError("incorrect g/m key packet: " +
-                        str(data))
+                # raise ValueError("incorrect g/m key packet: " +
+                #         str(data))
+                print "incorrect: " + str(data)
+                return set()
 
+        print "correct: " + str(data)
         return set(keys)
 
     def _data_to_keys_mm(self, data):
@@ -145,6 +148,7 @@ class State(object):
         evt = None
         if len(data) == 4:
             keys = self._data_to_keys_g_and_m(data)
+            print "keys: " + str(keys)
             keysDown, keysUp = self._update_keys_down(Key.gmKeys, keys)
             newState = self.clone()
             evt = InputEvent(oldState, newState, keysDown, keysUp)

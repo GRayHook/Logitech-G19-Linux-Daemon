@@ -106,7 +106,7 @@ class G19(object):
         val = []
         try:
             val = list(self.__usbDevice.handleIf1.interruptRead(
-                0x81, maxLen, 10))
+                0x83, maxLen, 10))
         except usb.USBError:
             pass
         finally:
@@ -119,15 +119,15 @@ class G19(object):
         @return Read data or empty list.
 
         '''
-        # self.__usbDeviceMutex.acquire()
-        # val = []
-        # try:
-        #     val = list(self.__usbDevice.handleIf0.interruptRead(0x81, 2, 10))
-        # except usb.USBError:
-        #     pass
-        # finally:
-        #     self.__usbDeviceMutex.release()
-        # return val
+        self.__usbDeviceMutex.acquire()
+        val = []
+        try:
+            val = list(self.__usbDevice.handleIf0.interruptRead(0x81, 2, 10))
+        except usb.USBError:
+            pass
+        finally:
+            self.__usbDeviceMutex.release()
+        return val
 
     def read_multimedia_keys(self):
         '''Reads interrupt data from multimedia keys.
@@ -203,11 +203,11 @@ class G19(object):
     def set_bg_color(self, r, g, b):
         '''Sets backlight to given color.'''
         rtype = usb.TYPE_CLASS | usb.RECIP_INTERFACE
-        colorData = [0x07, r, g, b, 0xff]
+        colorData = [7, r, g, b]
         self.__usbDeviceMutex.acquire()
         try:
             self.__usbDevice.handleIf1.controlMsg(
-                rtype, 0x09, colorData, 0x307, 0x00, 1000)
+                rtype, 0x09, colorData, 0x307, 0x01, 10)
         finally:
             self.__usbDeviceMutex.release()
 
@@ -323,11 +323,11 @@ class G19UsbController(object):
         config = self.__lcd_device.configurations[0]
         print vars(config)
         # iface0 = config.interfaces[0][0]
-        #print vars(config.interfaces[0][0])
-        iface1 = config.interfaces[0][0]
         print vars(config.interfaces[0][0])
-        #print vars(config.interfaces[0][0].endpoints[0])
-        #print vars(config.interfaces[0][0].endpoints[1])
+        iface1 = config.interfaces[0][1]
+        print vars(config.interfaces[0][1])
+        print vars(config.interfaces[0][0].endpoints[0])
+        print vars(config.interfaces[0][0].endpoints[1])
         #
         # try:
         #     self.handleIfMM.setConfiguration(1)
@@ -365,16 +365,16 @@ class G19UsbController(object):
 
     def reset(self):
         '''Resets the device on the USB.'''
-        # self.handleIf0.reset()
+        self.handleIf0.reset()
         self.handleIf1.reset()
         # self.handleIfMM.reset()
 
 def main():
     lg19 = G19(True)
-    lg19.set_bg_color(1, 99, 1)
-    #lg19.start_event_handling()
+    lg19.set_bg_color([255,255,255])
+    lg19.start_event_handling()
     time.sleep(20)
-    #lg19.stop_event_handling()
+    lg19.stop_event_handling()
 
 if __name__ == '__main__':
     main()

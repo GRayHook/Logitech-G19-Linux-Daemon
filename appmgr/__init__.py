@@ -35,14 +35,14 @@ class AppMgr(object):
         self.__key_listener = KeyBindings(self.__lcd)
         self.__lcd.add_key_listener(self.__key_listener)
         self.__lcd.start_event_handling()
-        self.__drawer = libdraw.Drawer(libdraw.Frame())
-        self.__color_adapter = ColorAdapter(self.ambient_callback)
-        self.__cur_app = UrPidor(self.__drawer)
-        self.__color_adapter.start()
-        self.__loop = GLib.MainLoop()
-        self.__notification_thread = threading.Thread(target=self.__notification_thread_target,
-                                                      name='Notification thread')
-        self.__notification_thread.start()
+        #self.__drawer = libdraw.Drawer(libdraw.Frame())
+        #self.__color_adapter = ColorAdapter(self.ambient_callback)
+        #self.__cur_app = UrPidor(self.__drawer)
+        #self.__color_adapter.start()
+        #self.__loop = GLib.MainLoop()
+        #self.__notification_thread = threading.Thread(target=self.__notification_thread_target,
+        #                                              name='Notification thread')
+        #self.__notification_thread.start()
 
     def __notification_thread_target(self):
         try:
@@ -73,16 +73,17 @@ class AppMgr(object):
 
     def routine(self):
         """Routine for applet manager"""
-        self.__cur_app.startup()
+        # self.__cur_app.startup()
         try:
             while True:
                 # tik = timeit.default_timer()
-                self.__cur_app.routine()
+                # self.__cur_app.routine()
                 # print "__cur_app.routine: " + str(timeit.default_timer() - tik)
                 if self.__exit:
                     break
-                self.__lcd.send_frame(self.__drawer.get_frame_data())
-                sleep(self.__cur_app.get_period())
+                # self.__lcd.send_frame(self.__drawer.get_frame_data())
+                #sleep(self.__cur_app.get_period())
+                sleep(1)
         except (KeyboardInterrupt, SystemExit):
             print "\nkb exception2"
             self.shutdown()
@@ -90,20 +91,21 @@ class AppMgr(object):
     def ambient_callback(self, color_rgb):
         """Callback for ColorAdapter"""
         self.__lcd.set_bg_color(color_rgb[0], color_rgb[1], color_rgb[2])
-        self.__cur_app.ambient_callback(color_rgb)
+        #self.__cur_app.ambient_callback(color_rgb)
 
     def shutdown(self):
         """Shutdown appmgr"""
         if self.__exit:
             return
+        print "SHUTDOWNING"
         self.__exit = True
-        if self.__loop.is_running():
-            self.__loop.quit()
-        if self.__notification_thread.isAlive() and threading.current_thread() != self.__notification_thread:
-            self.__notification_thread.join()
+        #if self.__loop.is_running():
+        #    self.__loop.quit()
+        #if self.__notification_thread.isAlive() and threading.current_thread() != self.__notification_thread:
+        #    self.__notification_thread.join()
         self.__lcd.reset()
         self.__lcd.stop_event_handling()
-        self.__color_adapter.shutdown()
+        #self.__color_adapter.shutdown()
 
 class Applet(object):
     """docstring for Applet."""

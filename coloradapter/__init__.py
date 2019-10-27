@@ -30,4 +30,5 @@ class ColorAdapter(threading.Thread):
         """Apply backlight color to keyboard via callback"""
         red, green, blue = struct.unpack("iii", sock.recv(12))
         red, green, blue = red * 255 / 63, green * 255 / 63, blue * 255 / 63
+        print "r(%d) g(%d) b(%d)" % (red, green, blue)
         self.__callback([red, green, blue])
