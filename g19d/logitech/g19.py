@@ -1,9 +1,10 @@
-from g19_receivers import G19Receiver
+from g19d.logitech.g19_receivers import G19Receiver
 
 import sys
 import threading
 import time
 import usb
+import os
 import PIL.Image as Img
 
 class G19(object):
@@ -19,81 +20,16 @@ class G19(object):
         self.__usbDeviceMutex = threading.Lock()
         self.__keyReceiver = G19Receiver(self)
         self.__threadDisplay = None
-        self.__interrupt = False
 
-    @staticmethod
-    def convert_image_to_frame(filename):
-        '''Loads image from given file.
+        logo = open(os.path.dirname(os.path.abspath(__file__))+"/logo", "rb")
+        frame = logo.read()
+        self.send_frame(frame)
 
-        Format will be auto-detected.  If neccessary, the image will be resized
-        to 320x240.
 
-        @return Frame data to be used with send_frame().
-
-        '''
-        img = Img.open(filename)
-        access = img.load()
-        if img.size != (320, 240):
-            img = img.resize((320, 240), Img.CUBIC)
-            access = img.load()
-        data = []
-        for x in range(320):
-            for y in range(240):
-                r, g, b = access[x, y]
-                val = G19.rgb_to_uint16(r, g, b)
-                data.append(val >> 8 & 0xff)
-                data.append(val & 0xff)
-        return data
-
-    @staticmethod
-    def rgb_to_uint16(r, g, b):
-        '''Converts a RGB value to 16bit highcolor (5-6-5).
-
-        @return 16bit highcolor value in little-endian.
-
-        '''
-        rBits = r * 2**5 / 255
-        gBits = g * 2**6 / 255
-        bBits = b * 2**5 / 255
-
-        rBits = rBits if rBits <= 0b00011111 else 0b00011111
-        gBits = gBits if gBits <= 0b00111111 else 0b00111111
-        bBits = bBits if bBits <= 0b00011111 else 0b00011111
-
-        valueH = (rBits << 3) | (gBits >> 3)
-        valueL = (gBits << 5) | bBits
-        return valueL << 8 | valueH
-
-    def set_interrupt(self):
-        self.__interrupt = True
-
-    def unset_interrupt(self):
-        self.__interrupt = False
 
     def add_key_listener(self, applet):
         '''Starts an applet.'''
         self.__keyReceiver.add_input_processor(applet.get_input_processor())
-
-    def fill_display_with_color(self, r, g, b):
-        '''Fills display with given color.'''
-        # 16bit highcolor format: 5 red, 6 gree, 5 blue
-        # saved in little-endian, because USB is little-endian
-        value = self.rgb_to_uint16(r, g, b)
-        valueH = value & 0xff
-        valueL = value >> 8 & 0xff
-        frame = [valueL, valueH] * (320 * 240)
-        print valueL
-        print valueH
-        self.send_frame(frame)
-
-    def load_image(self, filename):
-        '''Loads image from given file.
-
-        Format will be auto-detected.  If neccessary, the image will be resized
-        to 320x240.
-
-        '''
-        self.send_frame(self.convert_image_to_frame(filename))
 
     def read_g_and_m_keys(self, maxLen=20):
         '''Reads interrupt data from G, M and light switch keys.
@@ -140,7 +76,7 @@ class G19(object):
         try:
             val = list(self.__usbDevice.handleIfMM.interruptRead(0x82, 2, 10))
         except usb.USBError as err:
-            print "USB error({0}): {1}".format(err.errno, err.strerror)
+            print("USB error({0}): {1}".format(err.errno, err.strerror))
         finally:
             self.__usbDeviceMutex.release()
         return val
@@ -178,8 +114,6 @@ class G19(object):
         (data[239 * 2], data[239 * 2 + 1]) the lower left one.
 
         '''
-        if self.__interrupt:
-            return
         if len(data) != (320 * 240 * 2):
             raise ValueError("illegal frame size: " + str(len(data))
                     + " should be 320x240x2=" + str(320 * 240 * 2))
@@ -196,18 +130,20 @@ class G19(object):
         try:
             self.__usbDevice.handleIf0.bulkWrite(2, frame, 1000)
         except usb.USBError as err:
-            print "USB error({0}): {1}".format(err.errno, err.strerror)
+            print("USB error({0}): {1}".format(err.errno, err.strerror))
         finally:
             self.__usbDeviceMutex.release()
 
     def set_bg_color(self, r, g, b):
         '''Sets backlight to given color.'''
         rtype = usb.TYPE_CLASS | usb.RECIP_INTERFACE
-        colorData = [7, r, g, b]
+        colorData = [7, int(r), int(g), int(b)]
         self.__usbDeviceMutex.acquire()
         try:
             self.__usbDevice.handleIf1.controlMsg(
-                rtype, 0x09, colorData, 0x307, 0x01, 10)
+                rtype, 0x09, bytes(colorData), 0x307, 0x01, 10)
+        except usb.core.USBTimeoutError as err:
+            print(err)
         finally:
             self.__usbDeviceMutex.release()
 
@@ -241,22 +177,6 @@ class G19(object):
             self.__usbDevice.handleIf1.controlMsg(rtype, 0x0a, data, 0x0, 0x0)
         finally:
             self.__usbDeviceMutex.release()
-
-    def set_display_colorful(self):
-        '''This is an example how to create an image having a green to red
-        transition from left to right and a black to blue from top to bottom.
-
-        '''
-        data = []
-        for i in range(320 * 240 * 2):
-            data.append(0)
-        for x in range(320):
-            for y in range(240):
-                data[2*(x*240+y)] = self.rgb_to_uint16(
-                    255 * x / 320, 255 * (320 - x) / 320, 255 * y / 240) >> 8 & 0xff
-                data[2*(x*240+y)+1] = self.rgb_to_uint16(
-                    255 * x / 320, 255 * (320 - x) / 320, 255 * y / 240) & 0xff
-        self.send_frame(data)
 
     def start_event_handling(self):
         '''Start event processing (aka keyboard driver).

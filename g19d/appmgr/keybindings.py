@@ -1,7 +1,7 @@
 # coding: utf-8
 """Key listener for G19 (only G19 just bucause of restrictions of original driver)"""
-from pykeyboard import PyKeyboard
-from logitech.g19_keys import (Data, Key)
+import pynput.keyboard as keyboard
+from g19d.logitech.g19_keys import (Data, Key)
 
 class KeyBindings(object):
     '''Simple color changing.
@@ -14,25 +14,28 @@ class KeyBindings(object):
     def __init__(self, lg19):
         self.__lg19 = lg19
         self.__cur_m = Data.LIGHT_KEY_M1
-        self.__keyboard = PyKeyboard(':0')
+        self.__keyboard = keyboard.Controller()
         self.__macros_list = {
             (Key.G01, True): self.__press_key,
             (Key.G01, False): self.__press_key
         }
         self.__key_binds = {
-            Key.G01: self.__keyboard.function_keys[1],
-            Key.G02: self.__keyboard.function_keys[2],
-            Key.G03: self.__keyboard.function_keys[3],
-            Key.G04: self.__keyboard.function_keys[4],
-            Key.G05: self.__keyboard.function_keys[5],
-            Key.G06: self.__keyboard.function_keys[6],
-            Key.G07: self.__keyboard.function_keys[7],
-            Key.G08: self.__keyboard.function_keys[8],
-            Key.G09: self.__keyboard.function_keys[9],
-            Key.G10: self.__keyboard.function_keys[10],
-            Key.G11: self.__keyboard.function_keys[11],
-            Key.G12: self.__keyboard.function_keys[12]
+            Key.G01: keyboard.Key.f1,
+            Key.G02: keyboard.Key.f2,
+            Key.G03: keyboard.Key.f3,
+            Key.G04: keyboard.Key.f4,
+            Key.G05: keyboard.Key.f5,
+            Key.G06: keyboard.Key.f6,
+            Key.G07: keyboard.Key.f7,
+            Key.G08: keyboard.Key.f8,
+            Key.G09: keyboard.Key.f9,
+            Key.G10: keyboard.Key.f10,
+            Key.G11: keyboard.Key.f11,
+            Key.G12: keyboard.Key.f12
         }
+
+    def register_keybind(self, key):
+        self.__macros_list.update(key)
 
     def _update_leds(self):
         '''Updates M-leds according to enabled state.'''
@@ -44,9 +47,9 @@ class KeyBindings(object):
             return False
 
         if state:
-            self.__keyboard.press_key(keyboard_key)
+            self.__keyboard.press(keyboard_key)
         else:
-            self.__keyboard.release_key(keyboard_key)
+            self.__keyboard.release(keyboard_key)
 
         return True
 
@@ -54,7 +57,7 @@ class KeyBindings(object):
     def __execute_macros(self, evnt):
         """Execute macros which bind on pressed key"""
         processed = False
-        for key in xrange(Key.G01, Key.G12):
+        for key in range(Key.G01, Key.WINKEY_SWITCH):
             if key in evnt.keysDown:
                 state = True
                 callback = self.__macros_list.get((key, True), self.__press_key)
@@ -91,6 +94,5 @@ class KeyBindings(object):
         self._update_leds()
 
         processed = processed or self.__execute_macros(evt)
-        print processed
 
         return processed

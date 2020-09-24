@@ -1,5 +1,5 @@
-from g19_keys import (Data, Key)
-from runnable import Runnable
+from g19d.logitech.g19_keys import (Data, Key)
+from g19d.logitech.runnable import Runnable
 
 import threading
 import time
@@ -43,6 +43,31 @@ class State(object):
 
     def __init__(self):
         self.__keysDown = set()
+
+    def _data_to_keys_display(self, data):
+        '''Converts a G/M keys data package to a set of keys defined as
+        pressed by it.
+
+        '''
+        #print(data)
+        if len(data) != 2:
+            raise ValueError("not a multimedia key packet: " + str(data))
+        empty = 0x400000
+        curVal = data[0]
+        keys = []
+        while curVal:
+            foundAKey = False
+            for val in Data.displayKeys.keys():
+                if val & curVal == val:
+                    curVal ^= val
+                    keys.append(Data.displayKeys[val])
+                    foundAKey = True
+            if not foundAKey:
+                raise ValueError("incorrect multimedia key packet: " +
+                        str(data))
+
+        #print(keys)
+        return set(keys)
 
     def _data_to_keys_g_and_m(self, data):
         '''Converts a G/M keys data package to a set of keys defined as
@@ -134,6 +159,22 @@ class State(object):
         state.__keysDown = set(self.__keysDown)
         return state
 
+    def packet_received_display(self, data):
+        '''Mutates the state by given data packet from G- and M- keys.
+
+        @param data Data packet received.
+        @return InputEvent for data packet, or None if data packet was ignored.
+
+        '''
+        oldState = self.clone()
+        evt = None
+        if len(data) == 2:
+            keys = self._data_to_keys_display(data)
+            keysDown, keysUp = self._update_keys_down(Key.displayKeys, keys)
+            newState = self.clone()
+            evt = InputEvent(oldState, newState, keysDown, keysUp)
+        return evt
+
     def packet_received_g_and_m(self, data):
         '''Mutates the state by given data packet from G- and M- keys.
 
@@ -212,13 +253,20 @@ class G19Receiver(Runnable):
                 for proc in processors:
                     if proc.process_input(evt):
                         break
-            else:
-                print "m/g ignored: ", data
+            #else:
+            #    print("m/g ignored: ", data)
             gotData = True
 
         data = self.__g19.read_display_menu_keys()
         if data:
-            print "dis: ", data
+            evt = self.__state.packet_received_display(data)
+            if evt:
+                for proc in processors:
+                    if proc.process_input(evt):
+                        break
+            #else:
+            #    print("m/g ignored: ", data)
+            #print("dis: ", data)
             gotData = True
 
         if not gotData:

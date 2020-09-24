@@ -41,6 +41,16 @@ class Key(object):
     SCROLL_UP, \
     SCROLL_DOWN = range(UP + 1, UP + 9)
 
+    displayKeys = set([
+            BACK, 
+            DOWN, 
+            LEFT, 
+            MENU, 
+            OK, 
+            RIGHT, 
+            SETTINGS, 
+            UP])
+
     mmKeys = set([
             WINKEY_SWITCH,
             NEXT,
