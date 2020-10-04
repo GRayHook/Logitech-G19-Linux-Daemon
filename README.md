@@ -4,13 +4,15 @@
   About
 -------
 
-  Now it just show countdown (personal date hardcoded) and listening my [ambient_light](https://bitbucket.org/GRayHook/logiled_ambient/src/master/) for G13 and G19.
+  This is userspace driver for Logitech G19.
+  
+  Features
+-------
 
-  Maybe libdraw will be usefull for you. Libdraw allow you to draw some shapes and place pics on screen. It able to combine new pics with previously drawn screen by alpha-channel.
-
-  I going to clean up my fork, rebase commits with normal names, etc. After clean up i will continue to develop this.
-
-  Also i going to add G13 and G502 to this driver.
+  + Watch with stopwatch (press "menu" to switch).
+  + Full support of [ambient-light](https://github.com/GRayHook/ambient-light). Driver will be like a supervisor: starts `ambient_light` from `PATH`, listening, terminating when it's time. It isn't required, but... C'mon, ambilight. Anyway, if `ambient_light` is not present in `PATH` driver should work fine.
+  + Keybindings to python code. Use Pynput to simulate combination of keys.
+  + DBus notifying on LCD.
 
   Requirements
 --------------
@@ -18,4 +20,3 @@
   + Pyusb
   + Pillow
   + Pynput
-  + [ambient_light](https://bitbucket.org/GRayHook/logiled_ambient/src/master/) from link above (It disable by default)
