@@ -93,7 +93,9 @@ static PyObject * draw_rectangle(PyObject * self, PyObject * args)
 			result[px * 240 + py] = _apply_alpha(pixels[px * 240 + py], color, alpha);
 	}
 
-	return PyBytes_FromStringAndSize(buf, map_size);
+	PyObject * result_obj = PyBytes_FromStringAndSize(buf, map_size);
+	free(buf);
+	return result_obj;
 }
 
 static PyObject * copy_rectangle(PyObject * self, PyObject * args)
@@ -137,7 +139,9 @@ static PyObject * copy_rectangle(PyObject * self, PyObject * args)
 		}
 	}
 
-	return PyBytes_FromStringAndSize(buf, map_size);
+	PyObject * result_obj = PyBytes_FromStringAndSize(buf, map_size);
+	free(buf);
+	return result_obj;
 }
 
 static PyObject * copy_text(PyObject * self, PyObject * args)
@@ -179,7 +183,9 @@ static PyObject * copy_text(PyObject * self, PyObject * args)
 		}
 	}
 
-	return PyBytes_FromStringAndSize(buf, map_size);
+	PyObject * result_obj = PyBytes_FromStringAndSize(buf, map_size);
+	free(buf);
+	return result_obj;
 }
 
 static PyMethodDef LibCDrawMethods[] = {
