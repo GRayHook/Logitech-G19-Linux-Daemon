@@ -6,9 +6,9 @@ c_module = setuptools.Extension('g19d.libcdraw',
 setuptools.setup(
     name="g19d",
     version="0.9.0",
-    author="Example Author",
-    author_email="author@example.com",
-    description="A small example package",
+    author="Sergey Marinkevich",
+    author_email="s@marinkevich.ru",
+    description="Logitech G19 userspace driver",
     packages=setuptools.find_packages(),
     python_requires='>=3.6',
     data_files = [
