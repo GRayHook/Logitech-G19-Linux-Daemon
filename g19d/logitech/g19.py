@@ -20,6 +20,9 @@ class G19(object):
         self.__usbDeviceMutex = threading.Lock()
         self.__keyReceiver = G19Receiver(self)
         self.__threadDisplay = None
+        self.__framePreambule = bytes([0x10, 0x0F, 0x00, 0x58, 0x02, 0x00, 0x00, 0x00,
+                                       0x00, 0x00, 0x00, 0x3F, 0x01, 0xEF, 0x00, 0x0F] + \
+                                      [ i for i in range(16, 256) ] + [ i for i in range(256) ])
 
         logo = open(os.path.dirname(os.path.abspath(__file__))+"/logo", "rb")
         frame = logo.read()
@@ -117,14 +120,8 @@ class G19(object):
         if len(data) != (320 * 240 * 2):
             raise ValueError("illegal frame size: " + str(len(data))
                     + " should be 320x240x2=" + str(320 * 240 * 2))
-        frame = [0x10, 0x0F, 0x00, 0x58, 0x02, 0x00, 0x00, 0x00,
-                 0x00, 0x00, 0x00, 0x3F, 0x01, 0xEF, 0x00, 0x0F]
-        for i in range(16, 256):
-            frame.append(i)
-        for i in range(256):
-            frame.append(i)
 
-        frame += data
+        frame = self.__framePreambule + data
 
         self.__usbDeviceMutex.acquire()
         try:

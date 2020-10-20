@@ -17,7 +17,7 @@ class Frame(object):
         self.__size_x = 320
         self.__size_y = 240
         self.__pixel_width = 2
-        self.__map = [0] * (self.__size_x * self.__size_y * self.__pixel_width)
+        self.__map = bytes([0] * (self.__size_x * self.__size_y * self.__pixel_width))
 
     def __get_column(self, column_i):
         """Get start point for column by column index"""
@@ -29,7 +29,7 @@ class Frame(object):
 
     def set_map(self, data):
         """Setter for map"""
-        self.__map = list(data)
+        self.__map = data
 
     @staticmethod
     def rgb_to_uint16(color_rgb):
@@ -62,7 +62,7 @@ class Drawer(object):
         else:
             alpha = 1.0
 
-        buf = bytes(self.get_frame_data())
+        buf = self.get_frame_data()
         new_frame = libcdraw.draw_rectangle(buf, position[0], position[1], size[0], size[1], color, alpha)
         self.set_frame_data(new_frame)
 
@@ -82,12 +82,12 @@ class Drawer(object):
         else:
             mask = bytes([255] * (size[0] * size[1]))
 
-        buf = bytes(self.get_frame_data())
+        buf = self.get_frame_data()
         new_frame = libcdraw.copy_rectangle(buf, position[0], position[1], size[0], size[1], image, mask)
         self.set_frame_data(new_frame)
 
     def draw_text(self, position, size, img):
-        buf = bytes(self.get_frame_data())
+        buf = self.get_frame_data()
         msk = img.tobytes()
         new_frame = libcdraw.copy_text(buf, position[0], position[1], size[0], size[1], 0x00, msk)
         self.set_frame_data(new_frame)
