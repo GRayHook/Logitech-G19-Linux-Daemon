@@ -33,7 +33,7 @@ class AppMgr(object):
         self.__key_listener = KeyBindings(self.__lcd)
         self.__lcd.add_key_listener(self.__key_listener)
         self.__lcd.start_event_handling()
-        self.__drawer = libdraw.Drawer(libdraw.Frame())
+        self.__drawer = libdraw.Drawer()
         self.__color_adapter = ColorAdapter(self.ambient_callback)
         self.__cur_app = UrPidor(self.__drawer)
         self.__key_listener.register_keybind(self.__cur_app.get_keybind())
@@ -63,7 +63,7 @@ class AppMgr(object):
         args = message.get_args_list()
         if len(args) == 8:
             notification = dict([(keys[i], args[i]) for i in range(8)])
-            drawer = libdraw.Drawer(libdraw.Frame())
+            drawer = libdraw.Drawer()
             notification_app = Notification(drawer, notification)
             notification_app.startup()
 
@@ -165,6 +165,8 @@ class UrPidor(Applet):
 
         self.__watch_alpha = 0.6
         self.__bg_color = [177, 31, 80, self.__watch_alpha]
+        #self.__fps = 0
+        #self.__second_time = timeit.default_timer()
 
     def startup(self):
         """Draw init image on screen"""
@@ -222,12 +224,23 @@ class UrPidor(Applet):
     def routine(self):
         """Applet's routine"""
         start_time = timeit.default_timer()
+        #fps = 0
+        #self.__fps += 1
+        #if timeit.default_timer() - self.__second_time > 1.0:
+        #    self.__second_time = timeit.default_timer()
+        #    fps = self.__fps
+        #    self.__fps = 0
+
         drawer = self._drawer
         time = UrPidor.__TIMER(self)
 
         drawer.draw_image([0, 90], [320, 85], self.__background_crop)
         drawer.draw_rectangle([0, 90], [320, 85], self.__bg_color)
         drawer.draw_textline([32, 90], 72, time)
+        #if fps:
+        #    drawer.draw_rectangle([0, 0], [50, 40], [0xff, 0xff, 0xff])
+        #    drawer.draw_textline([2, 2], 32, str(fps))
+
 
         #print("draw_screen: " + str(timeit.default_timer() - start_time))
         self._cooldown = (0.1 - (timeit.default_timer() - start_time))

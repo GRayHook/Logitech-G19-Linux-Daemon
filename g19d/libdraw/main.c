@@ -5,7 +5,24 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-/* TODO: Remove magic screen size 240*320 */
+/* TODO: Remove magic screen size G19_HEIGHT*G19_WIDTH */
+
+#define G19_WIDTH 320
+#define G19_HEIGHT 240
+#define G19_RESOLUTION (G19_HEIGHT * G19_WIDTH)
+#define G19_SIZE (G19_RESOLUTION * sizeof(uint16_t))
+#define G19_PIXEL(_x, _y) ((_x) * G19_HEIGHT + (_y))
+
+typedef struct {
+	PyObject_HEAD
+	uint16_t * map;
+} g19_frame_t;
+
+static PyObject * g19_get_bytes(g19_frame_t * self, PyObject * Py_UNUSED(ignored))
+{
+	PyObject * result = PyBytes_FromStringAndSize((const char *)self->map, G19_SIZE);
+	return result;
+}
 
 static inline uint16_t _rgb_to_uint16(uint8_t red, uint8_t green, uint8_t blue)
 {
@@ -61,10 +78,8 @@ static PyObject * apply_alpha(PyObject * self, PyObject *args)
 	return Py_BuildValue("I", _apply_alpha(color1, color2, alpha));
 }
 
-static PyObject * draw_rectangle(PyObject * self, PyObject * args)
+static PyObject * draw_rectangle(g19_frame_t * self, PyObject * args)
 {
-	PyObject * bmap = NULL;
-
 	int x  = 0,
 	    y  = 0,
 	    sx = 0,
@@ -73,58 +88,51 @@ static PyObject * draw_rectangle(PyObject * self, PyObject * args)
 	uint16_t color = 0;
 	float alpha = 0.;
 
-	if(!PyArg_ParseTuple(args, "SiiiiHf", &bmap, &x, &y, &sx, &sy, &color, &alpha))
+	if(!PyArg_ParseTuple(args, "iiiiHf", &x, &y, &sx, &sy, &color, &alpha))
 		return NULL;
 
-	char * map = PyBytes_AsString(bmap);
-	int map_size = PyBytes_Size(bmap);
-
-	char * buf = calloc(sizeof(uint8_t), map_size);
-	memcpy(buf, map, map_size);
-	uint16_t * result = (uint16_t *)buf;
-
 	int end_x = x + sx;
+	if (end_x > G19_WIDTH)
+		end_x = G19_WIDTH;
+
 	int end_y = y + sy;
-	uint16_t * pixels = (uint16_t *)map;
+	if (end_y > G19_HEIGHT)
+		end_y = G19_HEIGHT;
 
 	for (int px = x; px < end_x; px++)
 	{
 		for (int py = y; py < end_y; py++)
-			result[px * 240 + py] = _apply_alpha(pixels[px * 240 + py], color, alpha);
+			self->map[G19_PIXEL(px, py)] = _apply_alpha(self->map[G19_PIXEL(px, py)], color, alpha);
 	}
 
-	PyObject * result_obj = PyBytes_FromStringAndSize(buf, map_size);
-	free(buf);
-	return result_obj;
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
-static PyObject * copy_rectangle(PyObject * self, PyObject * args)
+static PyObject * copy_rectangle(g19_frame_t * self, PyObject * args)
 {
-	PyObject * bmap   = NULL,
-	         * bsrc   = NULL,
+	PyObject * bsrc   = NULL,
 	         * balpha = NULL;
 	int x  = 0,
 	    y  = 0,
 	    sx = 0,
 	    sy = 0;
 
-	if(!PyArg_ParseTuple(args, "SiiiiSS", &bmap, &x, &y, &sx, &sy, &bsrc, &balpha))
+	if(!PyArg_ParseTuple(args, "iiiiSS", &x, &y, &sx, &sy, &bsrc, &balpha))
 		return NULL;
-
-	char * map = PyBytes_AsString(bmap);
-	int map_size = PyBytes_Size(bmap);
-
-	char * buf = calloc(sizeof(uint8_t), map_size);
-	memcpy(buf, map, map_size);
-	uint16_t * result = (uint16_t *)buf;
 
 	char * src = PyBytes_AsString(bsrc);
 
 	char * alpha = PyBytes_AsString(balpha);
 
 	int end_x = x + sx;
+	if (end_x > G19_WIDTH)
+		end_x = G19_WIDTH;
+
 	int end_y = y + sy;
-	uint16_t * pixels = (uint16_t *)map;
+	if (end_y > G19_HEIGHT)
+		end_y = G19_HEIGHT;
+
 	uint16_t * img = (uint16_t *)src;
 	uint8_t * mask = (uint8_t *)alpha;
 	int mask_idx = 0;
@@ -134,20 +142,18 @@ static PyObject * copy_rectangle(PyObject * self, PyObject * args)
 	{
 		for (int px = x; px < end_x; px++)
 		{
-			result[px * 240 + py] = _apply_alpha(pixels[px * 240 + py], img[img_idx++],
-			                                     (float)mask[mask_idx++] / 255);
+			self->map[G19_PIXEL(px, py)] = _apply_alpha(self->map[G19_PIXEL(px, py)], img[img_idx++],
+			                                            (float)mask[mask_idx++] / 255);
 		}
 	}
 
-	PyObject * result_obj = PyBytes_FromStringAndSize(buf, map_size);
-	free(buf);
-	return result_obj;
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
-static PyObject * copy_text(PyObject * self, PyObject * args)
+static PyObject * copy_text(g19_frame_t * self, PyObject * args)
 {
-	PyObject * bmap   = NULL,
-	         * balpha = NULL;
+	PyObject * balpha = NULL;
 
 	int x  = 0,
 	    y  = 0,
@@ -156,21 +162,19 @@ static PyObject * copy_text(PyObject * self, PyObject * args)
 
 	uint16_t color;
 
-	if(!PyArg_ParseTuple(args, "SiiiiHS", &bmap, &x, &y, &sx, &sy, &color, &balpha))
+	if(!PyArg_ParseTuple(args, "iiiiHS", &x, &y, &sx, &sy, &color, &balpha))
 		return NULL;
-
-	char * map = PyBytes_AsString(bmap);
-	int map_size = PyBytes_Size(bmap);
-
-	char * buf = calloc(sizeof(uint8_t), map_size);
-	memcpy(buf, map, map_size);
-	uint16_t * result = (uint16_t *)buf;
 
 	char * alpha = PyBytes_AsString(balpha);
 
 	int end_x = x + sx;
+	if (end_x > G19_WIDTH)
+		end_x = G19_WIDTH;
+
 	int end_y = y + sy;
-	uint16_t * pixels = (uint16_t *)map;
+	if (end_y > G19_HEIGHT)
+		end_y = G19_HEIGHT;
+
 	uint8_t * mask = (uint8_t *)alpha;
 	int idx = 0;
 
@@ -178,34 +182,83 @@ static PyObject * copy_text(PyObject * self, PyObject * args)
 	{
 		for (int px = x; px < end_x; px++)
 		{
-			result[px * 240 + py] = _apply_alpha(pixels[px * 240 + py], color,
-			                                     (float)mask[idx++] / 255);
+			self->map[G19_PIXEL(px, py)] = _apply_alpha(self->map[G19_PIXEL(px, py)], color,
+			                                               (float)mask[idx++] / 255);
 		}
 	}
 
-	PyObject * result_obj = PyBytes_FromStringAndSize(buf, map_size);
-	free(buf);
-	return result_obj;
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 static PyMethodDef LibCDrawMethods[] = {
-	{"rgb_to_uint16", rgb_to_uint16, METH_VARARGS, "drisnya"},
-	{"apply_alpha", apply_alpha, METH_VARARGS, "drisnya"},
-	{"draw_rectangle", draw_rectangle, METH_VARARGS, "drisnya"},
-	{"copy_text", copy_text, METH_VARARGS, "drisnya"},
-	{"copy_rectangle", copy_rectangle, METH_VARARGS, "drisnya"},
+	{"rgb_to_uint16", rgb_to_uint16, METH_VARARGS, "Convert 3x1-byte color's channel to 2-byte color"},
+	{"apply_alpha", apply_alpha, METH_VARARGS, "Merge two pixel"},
 	{NULL, NULL, 0, NULL}
 };
 
 static struct PyModuleDef libcdrawmodule = {
 	PyModuleDef_HEAD_INIT,
 	"libdrawc",
-	"Drisnya",
+	"Drawer for G19-Linux-Driver",
 	-1,
 	LibCDrawMethods
 };
 
+static void g19_dealloc(g19_frame_t * self)
+{
+	free(self->map);
+	Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+static int g19_init(g19_frame_t * self, PyObject * args, PyObject * kwds)
+{
+	self->map = calloc(sizeof(uint16_t), G19_RESOLUTION);
+	if (!self->map)
+		return -1;
+
+	return 0;
+}
+
+static PyMethodDef g19_methods[] = {
+	{"get_bytes", (PyCFunction)g19_get_bytes, METH_NOARGS, "Get map in bytes"},
+	{"draw_rectangle", (PyCFunction)draw_rectangle, METH_VARARGS, "Draw rectangle on map"},
+	{"copy_text", (PyCFunction)copy_text, METH_VARARGS, "Copy rectangle from 1-channel+alpha picture"},
+	{"copy_rectangle", (PyCFunction)copy_rectangle, METH_VARARGS, "Copy rectangle from BGR pillow picture to map"},
+	{NULL, NULL, 0, NULL}
+};
+
+
+static PyTypeObject g19_frame = {
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name = "libcdraw.Frame",
+	.tp_doc = "G19 Frame",
+	.tp_basicsize = sizeof(g19_frame_t),
+	.tp_itemsize = 0,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_new = PyType_GenericNew,
+	.tp_init = (initproc)g19_init,
+	.tp_dealloc = (destructor)g19_dealloc,
+	.tp_methods = g19_methods
+};
+
 PyMODINIT_FUNC PyInit_libcdraw(void)
 {
-	return PyModule_Create(&libcdrawmodule);
+	if (PyType_Ready(&g19_frame) < 0)
+		return NULL;
+
+	PyObject * module = PyModule_Create(&libcdrawmodule);
+	if (module == NULL)
+		return NULL;
+
+	Py_INCREF(&g19_frame);
+	if (PyModule_AddObject(module, "Frame", (PyObject *)&g19_frame) < 0)
+	{
+		Py_DECREF(&g19_frame);
+		Py_DECREF(module);
+		return NULL;
+	}
+
+	return module;
 }
+
