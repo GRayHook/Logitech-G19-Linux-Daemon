@@ -27,7 +27,7 @@ def shutdown(*args):
 def routine():
     CONTEXT["APPMGR"] = AppMgr()
     time.sleep(1)
-    CONTEXT["APPMGR"].routine()
+    CONTEXT["APPMGR"].run()
 
 
 def main():
@@ -40,6 +40,7 @@ def main():
     thread.start()
 
     CONTEXT["exit"].wait()
+
     CONTEXT["APPMGR"].shutdown()
     thread.join()
 
