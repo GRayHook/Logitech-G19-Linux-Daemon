@@ -85,9 +85,9 @@ class Watch(Applet):
 
     def ambient_callback(self, color_rgb):
         """Callback for ambient_light"""
-        color_rgba = color_rgb
-        color_rgba.append(self.__watch_alpha)
-        self.__bg_color = color_rgba
+        if color_rgb == [0, 0, 0]:
+            return
+        self.__bg_color = color_rgb + [ self.__watch_alpha ]
 
     def __stopwatch(self):
         if self.__freeze_time:
