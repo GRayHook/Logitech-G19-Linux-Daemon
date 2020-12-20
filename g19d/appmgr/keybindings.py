@@ -16,8 +16,6 @@ class KeyBindings(object):
         self.__cur_m = Data.LIGHT_KEY_M1
         self.__keyboard = keyboard.Controller()
         self.__macros_list = {
-            (Key.G01, True): self.__press_key,
-            (Key.G01, False): self.__press_key
         }
         self.__key_binds = {
             Key.G01: keyboard.Key.f1,
@@ -36,6 +34,9 @@ class KeyBindings(object):
 
     def register_keybind(self, key):
         self.__macros_list.update(key)
+
+    def drop_keybind(self):
+        self.__macros_list = {}
 
     def _update_leds(self):
         '''Updates M-leds according to enabled state.'''

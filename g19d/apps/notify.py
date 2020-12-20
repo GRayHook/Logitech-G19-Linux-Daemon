@@ -13,6 +13,7 @@ import g19d.libdraw as libdraw
 from g19d.logitech.g19_keys import Key
 
 class Notification(Applet):
+    LISTED = 0
     """docstring for UrPidor."""
     def __init__(self, appmgr):
         super(Notification, self).__init__(appmgr)

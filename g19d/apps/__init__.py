@@ -3,6 +3,8 @@ import threading
 import g19d.libdraw as libdraw
 
 class Applet(object):
+    LISTED = 1
+
     """docstring for Applet."""
     def __init__(self, appmgr):
         super(Applet, self).__init__()

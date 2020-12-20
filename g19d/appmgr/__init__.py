@@ -13,6 +13,7 @@ from g19d.coloradapter import ColorAdapter
 from g19d.appmgr.keybindings import KeyBindings
 from g19d.apps.watch import Watch
 from g19d.apps.notify import Notification
+from g19d.apps.applets_list import AList
 import os
 import sys
 
@@ -31,9 +32,11 @@ class AppMgr(object):
         self.__lcd.add_key_listener(self.__key_listener)
         self.__lcd.start_event_handling()
         self.__color_adapter = ColorAdapter(self.ambient_callback)
-        self.__apps = [Watch(self), Notification(self)]
-        self.__cur_app = self.__apps[0]
-        self.__prev_app = self.__cur_app
+        self.__alist = AList(self)
+        self.__apps = [Watch(self), Notification(self), self.__alist]
+        self.__cur_app = None
+        self.__prev_app = None
+        self.change_app(self.__apps[0])
         self.__key_listener.register_keybind(self.__cur_app.get_keybind())
         self.__color_adapter.start()
 
@@ -84,6 +87,17 @@ class AppMgr(object):
 
         logging.info(u'Success shutdown!')
 
+    def get_apps_list(self):
+        return tuple(self.__apps)
+
+    def change_app(self, app):
+        self.unirq()
+        self.__cur_app = app
+        self.__key_listener.drop_keybind()
+        keybinds = self.__cur_app.get_keybind()
+        keybinds.update(self.__alist.get_keybind_irq())
+        self.__key_listener.register_keybind(keybinds)
+
     def irq(self, app):
         self.unirq()
         self.__prev_app = self.__cur_app
@@ -91,5 +105,8 @@ class AppMgr(object):
         self.__key_listener.register_keybind(self.__cur_app.get_keybind())
 
     def unirq(self):
+        if not self.__prev_app:
+            return
         self.__cur_app = self.__prev_app
         self.__key_listener.register_keybind(self.__cur_app.get_keybind())
+        self.__prev_app = None
