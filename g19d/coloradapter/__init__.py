@@ -27,13 +27,28 @@ class ColorAdapter(threading.Thread):
             return
 
         self.__sock.listen(1)
+        self.__sock.settimeout(1)
+
+        executable = None
+        for path in os.environ["PATH"].split(os.pathsep):
+            fname = os.path.join(path, "ambient_light")
+            if os.path.isfile(fname) and os.access(fname, os.X_OK):
+                executable = fname
+                break
+
+        if not executable:
+            return
 
         self.__thread_ambilight = threading.Thread(target=self.__ambilight_target,
-                                                   name='Ambilight thread')
+                                                   name='Ambilight thread', args=[executable])
         self.__thread_ambilight.start()
 
         while not self.__evnt.is_set():
-            self.__conn = self.__sock.accept()[0]
+            try:
+                self.__conn = self.__sock.accept()[0]
+            except socket.timeout:
+                continue
+
             while not self.__evnt.is_set():
                 try:
                     payload = self.__conn.recv(3)
@@ -52,7 +67,8 @@ class ColorAdapter(threading.Thread):
         self.__evnt.set()
         self.__sock.close()
         if self.__thread_ambilight:
-            self.__ambilight.terminate()
+            if self.__ambilight:
+                self.__ambilight.terminate()
             self.__thread_ambilight.join()
 
     def apply_color_from_payload(self, payload):
@@ -66,18 +82,11 @@ class ColorAdapter(threading.Thread):
             self.__last_color = (red, green, blue)
             self.__callback([red, green, blue])
 
-    def __ambilight_target(self):
+    def __ambilight_target(self, executable):
         def preexec():
             os.setpgrp()
 
         while not self.__evnt.is_set():
-            executable = None
-            for path in os.environ["PATH"].split(os.pathsep):
-                fname = os.path.join(path, "ambient_light")
-                if os.path.isfile(fname) and os.access(fname, os.X_OK):
-                    executable = fname
-                    break
-
             fstdout = open("/tmp/ambient.log", "w")
             self.__ambilight = subprocess.Popen(executable, stdout=fstdout,
                                                 stderr=fstdout, preexec_fn=preexec)
