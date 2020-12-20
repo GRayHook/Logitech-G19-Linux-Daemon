@@ -13,6 +13,7 @@ from g19d.coloradapter import ColorAdapter
 from g19d.appmgr.keybindings import KeyBindings
 from g19d.apps.watch import Watch
 from g19d.apps.notify import Notification
+from g19d.apps.backlight_control import BLctl
 from g19d.apps.applets_list import AList
 import os
 import sys
@@ -33,12 +34,13 @@ class AppMgr(object):
         self.__lcd.start_event_handling()
         self.__color_adapter = ColorAdapter(self.ambient_callback)
         self.__alist = AList(self)
-        self.__apps = [Watch(self), Notification(self), self.__alist]
+        self.__apps = [Watch(self), Notification(self), BLctl(self), self.__alist]
         self.__cur_app = None
         self.__prev_app = None
         self.change_app(self.__apps[0])
         self.__key_listener.register_keybind(self.__cur_app.get_keybind())
         self.__color_adapter.start()
+        self.__ambient_enable = True
 
         logging.info(u'AppMgr has been inited')
 
@@ -59,11 +61,18 @@ class AppMgr(object):
                 cooldown = 0.001
             sleep(cooldown)
 
-    def ambient_callback(self, color_rgb):
+    def disable_ambient(self):
+        self.__ambient_enable = False
+
+    def enable_ambient(self):
+        self.__ambient_enable = True
+
+    def ambient_callback(self, color_rgb, force=False):
         """Callback for ColorAdapter"""
-        self.__lcd.set_bg_color(color_rgb[0], color_rgb[1], color_rgb[2])
-        for app in self.__apps:
-            app.ambient_callback(color_rgb)
+        if self.__ambient_enable or force:
+            self.__lcd.set_bg_color(color_rgb[0], color_rgb[1], color_rgb[2])
+            for app in self.__apps:
+                app.ambient_callback(color_rgb)
 
     def shutdown(self, *args):
         """Shutdown appmgr"""
