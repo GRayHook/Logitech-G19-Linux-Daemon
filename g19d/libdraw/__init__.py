@@ -48,9 +48,9 @@ class Drawer(object):
 
         new_frame = self.__frame.copy_rectangle(position[0], position[1], size[0], size[1], image, mask)
 
-    def draw_text(self, position, size, img):
+    def draw_text(self, position, size, img, color=0x00):
         msk = img.tobytes()
-        new_frame = self.__frame.copy_text(position[0], position[1], size[0], size[1], 0x00, msk)
+        new_frame = self.__frame.copy_text(position[0], position[1], size[0], size[1], color, msk)
 
     def draw_text_fitted(self, position, font_size, text):
         """Draw text"""
@@ -91,7 +91,7 @@ class Drawer(object):
         draw.text([0, 0], text, ("white"), font=font)
         self.draw_text(position, [maxwidth, height], img)
 
-    def draw_textline(self, position, font_size, text):
+    def draw_textline(self, position, font_size, text, color=0x00):
         """Draw text"""
         font = Font.truetype(os.path.dirname(__file__) + "/11676.otf", font_size)
         width = 0
@@ -102,9 +102,9 @@ class Drawer(object):
                 break
         img = Img.new("L", (320 - position[0], font_size), ("black"))
         draw = Draw.Draw(img)
-        draw.text([0, 0], text, ("white"), font=font)
+        draw.text([0, -int(font_size * 0.1875)], text, ("white"), font=font)
 
-        self.draw_text(position, [320 - position[0], font_size], img)
+        self.draw_text(position, [320 - position[0], font_size], img, color)
 
 
 

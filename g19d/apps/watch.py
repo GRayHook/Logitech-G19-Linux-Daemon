@@ -81,7 +81,7 @@ class Watch(Applet):
 
         drawer.draw_image([0, 90], [320, 85], self.__background_crop)
         drawer.draw_rectangle([0, 90], [320, 85], self.__bg_color)
-        drawer.draw_textline([32, 90], 72, time)
+        drawer.draw_textline([32, 103], 72, time)
 
     def ambient_callback(self, color_rgb):
         """Callback for ambient_light"""
