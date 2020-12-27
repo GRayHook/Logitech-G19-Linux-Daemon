@@ -3,6 +3,7 @@ import timeit
 import os
 import logging
 from time import sleep
+import configparser
 
 from g19d.apps import Applet
 import PIL.Image as Img
@@ -11,11 +12,14 @@ from g19d.logitech.g19_keys import Key
 
 class Watch(Applet):
     """docstring for Watch."""
+    __DEFAULT_BACKGROUND_PATH = os.path.dirname(os.path.abspath(__file__)) + "/../background.png"
 
     def __init__(self, appmgr):
         super(Watch, self).__init__(appmgr)
         self.name = "Watch"
-        self.__background = Img.open(os.path.dirname(os.path.abspath(__file__)) + "/../background.png")
+        self.__load_config()
+
+        self.__background = Img.open(self.__background_path)
         self.__background = self.__background.resize((320, 240), Img.CUBIC)
         self.__background_crop = self.__background.crop((0, 90, 320, 175))
 
@@ -27,6 +31,14 @@ class Watch(Applet):
 
         self.__watch_alpha = 0.6
         self.__bg_color = [177, 31, 80, self.__watch_alpha]
+
+    def __load_config(self):
+        self.__background_path = self.__DEFAULT_BACKGROUND_PATH
+        background_path = self._get_config("background")
+
+        if not background_path or not os.access(background_path, os.R_OK):
+            return
+        self.__background_path = background_path
 
     def _startup(self):
         """Draw init image on screen"""
