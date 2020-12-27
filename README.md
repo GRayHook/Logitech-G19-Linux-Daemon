@@ -20,3 +20,5 @@
   + Pyusb
   + Pillow
   + Pynput
+  + configparser
+  + PySimpleGUI
