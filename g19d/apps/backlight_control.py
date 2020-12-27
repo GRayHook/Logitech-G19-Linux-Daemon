@@ -35,6 +35,7 @@ class BLctl(Applet):
         self.__bg_color = [0, 0, 0]
         self.__entry = "mode"
         self.__changed = threading.Event()
+        self.__changed.set()
 
     def _startup(self):
         """Draw init image on screen"""
@@ -94,7 +95,7 @@ class BLctl(Applet):
         while not self._exit.is_set():
             start_time = timeit.default_timer()
 
-            if not self.__changed:
+            if not self.__changed.is_set():
                 sleep(0.05)
                 continue
             self.__changed.clear()

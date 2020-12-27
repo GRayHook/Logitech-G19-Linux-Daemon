@@ -15,6 +15,7 @@ from g19d.apps.watch import Watch
 from g19d.apps.notify import Notification
 from g19d.apps.backlight_control import BLctl
 from g19d.apps.applets_list import AList
+from g19d.apps.configure import Configure
 import os
 import sys
 
@@ -34,7 +35,7 @@ class AppMgr(object):
         self.__lcd.start_event_handling()
         self.__color_adapter = ColorAdapter(self.ambient_callback)
         self.__alist = AList(self)
-        self.__apps = [Watch(self), Notification(self), BLctl(self), self.__alist]
+        self.__apps = [Watch(self), Notification(self), BLctl(self), Configure(self), self.__alist]
         self.__cur_app = None
         self.__prev_app = None
         self.change_app(self.__apps[0])

@@ -4,6 +4,7 @@ import os
 import logging
 from time import sleep
 import configparser
+import threading
 
 from g19d.apps import Applet
 import PIL.Image as Img
@@ -31,6 +32,8 @@ class Watch(Applet):
 
         self.__watch_alpha = 0.6
         self.__bg_color = [177, 31, 80, self.__watch_alpha]
+
+        self.__need_startup = threading.Event()
 
     def __load_config(self):
         self.__background_path = self.__DEFAULT_BACKGROUND_PATH
@@ -88,6 +91,10 @@ class Watch(Applet):
 
     def __routine(self):
         """Applet's routine"""
+        if self.__need_startup.is_set():
+            self.__need_startup.clear()
+            self._startup()
+
         drawer = self._drawer
         time = self.__timer()
 
@@ -113,4 +120,10 @@ class Watch(Applet):
     def get_time():
         return datetime.datetime.now().strftime("%H:%M:%S")
 
+    def update_config(self):
+        self.__load_config()
+        self.__background = Img.open(self.__background_path)
+        self.__background = self.__background.resize((320, 240), Img.CUBIC)
+        self.__background_crop = self.__background.crop((0, 90, 320, 175))
+        self.__need_startup.set()
 

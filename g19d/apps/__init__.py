@@ -48,7 +48,7 @@ class Applet(object):
         """Callback for ambient_light"""
         pass
 
-    def __load_config(self):
+    def _load_config(self):
         config = configparser.ConfigParser()
         if not os.access(self.__GLOBAL_CONFIG_PATH, os.R_OK | os.W_OK):
             config_file = open(self.__GLOBAL_CONFIG_PATH, "w")
@@ -60,7 +60,7 @@ class Applet(object):
         return config
 
     def _get_config(self, option):
-        config = self.__load_config()
+        config = self._load_config()
         if self.name not in config:
             return None
         our_config = config[self.name]
@@ -68,6 +68,12 @@ class Applet(object):
             return None
         return our_config[option]
 
+    def _save_config(self, config):
+        with open(self.__GLOBAL_CONFIG_PATH, 'w') as config_file:
+            config.write(config_file)
+
+    def update_config(self):
+        pass
 
 if __name__ == '__main__':
     exit(1)
