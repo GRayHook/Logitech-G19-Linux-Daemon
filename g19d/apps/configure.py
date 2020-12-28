@@ -42,11 +42,15 @@ class Configure(Applet):
                 config = self._load_config()
                 watch_config = None
                 watch_background = ""
+                watch_flakes = False
                 if "Watch" in config:
                     watch_config = config["Watch"]
                     if "background" in watch_config:
                         watch_background = watch_config["background"]
+                    if "snow_flakes" in watch_config:
+                        watch_flakes = watch_config["snow_flakes"] == "yes"
                 watch_background_new = watch_background
+                watch_flakes_new = watch_flakes
 
                 if self.__first_try:
                     self.__first_try = False
@@ -63,6 +67,9 @@ class Configure(Applet):
                                           )
                             )
                         ],
+                        [
+                            sg.Checkbox("Show snow flakes", change_submits=True, enable_events=True, key="-WATCH FLAKES-"),
+                        ],
                         [sg.Button("Save"), sg.Button("Cancel")]
                     ]
                     window = sg.Window("Configure G19d", layout, finalize=True, disable_close=True)
@@ -70,20 +77,28 @@ class Configure(Applet):
                     window.un_hide()
 
                 window["-WATCH BACKGROUND-"].update(watch_background)
+                window["-WATCH FLAKES-"].update("1" if watch_flakes else "")
 
                 while not self._exit.is_set():
                     event, values = window.read(timeout=250)
                     if event == "-WATCH BACKGROUND-":
                         if values["-WATCH BACKGROUND-"]:
                             watch_background_new = values["-WATCH BACKGROUND-"]
+                    if event == "-WATCH FLAKES-":
+                        if "-WATCH FLAKES-" in values:
+                            watch_flakes_new = values["-WATCH FLAKES-"]
                     if event == sg.WIN_CLOSED or event == "Cancel":
                         break
                     if event == "Save":
-                        if watch_background == watch_background_new:
-                            break
                         if "Watch" not in config:
                             config["Watch"] = {}
-                        config["Watch"]["background"] = watch_background_new
+                        if watch_background != watch_background_new:
+                            config["Watch"]["background"] = watch_background_new
+                        if watch_flakes != watch_flakes_new:
+                            if watch_flakes_new:
+                                config["Watch"]["snow_flakes"] = "yes"
+                            else:
+                                config["Watch"]["snow_flakes"] = "no"
                         self._save_config(config)
                         apps = self._appmgr.get_apps_list()
                         for app in apps:

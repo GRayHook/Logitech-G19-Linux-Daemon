@@ -14,7 +14,7 @@ setuptools.setup(
     data_files = [
         ('g19d/logitech', ['g19d/logitech/logo']),
         ('g19d/libdraw', ['g19d/libdraw/11676.otf']),
-        ('g19d', ['g19d/background.png']),
+        ('g19d', ['g19d/background.png', 'g19d/flake.png']),
     ],
     entry_points={
         "console_scripts": [

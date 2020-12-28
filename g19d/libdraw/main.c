@@ -126,24 +126,26 @@ static PyObject * copy_rectangle(g19_frame_t * self, PyObject * args)
 	char * alpha = PyBytes_AsString(balpha);
 
 	int end_x = x + sx;
-	if (end_x > G19_WIDTH)
-		end_x = G19_WIDTH;
 
 	int end_y = y + sy;
-	if (end_y > G19_HEIGHT)
-		end_y = G19_HEIGHT;
 
 	uint16_t * img = (uint16_t *)src;
 	uint8_t * mask = (uint8_t *)alpha;
-	int mask_idx = 0;
 	int img_idx = 0;
 
 	for (int py = y; py < end_y; py++)
 	{
+		if (py < 0 || py >= G19_HEIGHT)
+		{
+			img_idx += sx;
+			continue;
+		}
 		for (int px = x; px < end_x; px++)
 		{
-			self->map[G19_PIXEL(px, py)] = _apply_alpha(self->map[G19_PIXEL(px, py)], img[img_idx++],
-			                                            (float)mask[mask_idx++] / 255);
+			if (px >= 0 && px < G19_WIDTH)
+				self->map[G19_PIXEL(px, py)] = _apply_alpha(self->map[G19_PIXEL(px, py)], img[img_idx],
+				                                            (float)mask[img_idx] / 255);
+			img_idx++;
 		}
 	}
 
@@ -168,22 +170,25 @@ static PyObject * copy_text(g19_frame_t * self, PyObject * args)
 	char * alpha = PyBytes_AsString(balpha);
 
 	int end_x = x + sx;
-	if (end_x > G19_WIDTH)
-		end_x = G19_WIDTH;
 
 	int end_y = y + sy;
-	if (end_y > G19_HEIGHT)
-		end_y = G19_HEIGHT;
 
 	uint8_t * mask = (uint8_t *)alpha;
 	int idx = 0;
 
 	for (int py = y; py < end_y; py++)
 	{
+		if (py < 0 || py >= G19_HEIGHT)
+		{
+			idx += sx;
+			continue;
+		}
 		for (int px = x; px < end_x; px++)
 		{
-			self->map[G19_PIXEL(px, py)] = _apply_alpha(self->map[G19_PIXEL(px, py)], color,
-			                                               (float)mask[idx++] / 255);
+			if (px >= 0 && px < G19_WIDTH)
+				self->map[G19_PIXEL(px, py)] = _apply_alpha(self->map[G19_PIXEL(px, py)], color,
+			                                               (float)mask[idx] / 255);
+			idx++;
 		}
 	}
 

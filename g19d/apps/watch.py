@@ -5,6 +5,7 @@ import logging
 from time import sleep
 import configparser
 import threading
+import random
 
 from g19d.apps import Applet
 import PIL.Image as Img
@@ -39,9 +40,17 @@ class Watch(Applet):
         self.__background_path = self.__DEFAULT_BACKGROUND_PATH
         background_path = self._get_config("background")
 
-        if not background_path or not os.access(background_path, os.R_OK):
-            return
-        self.__background_path = background_path
+        if background_path and os.access(background_path, os.R_OK):
+            self.__background_path = background_path
+
+        snow_enable = self._get_config("snow_flakes")
+        if snow_enable == "yes":
+            self.__snow = Img.open(os.path.dirname(os.path.abspath(__file__)) + "/../flake.png")
+            self.__snow_pos = []
+            while len(self.__snow_pos) < 50:
+                self.__snow_pos.append([random.randint(-10, 330), random.randint(-10, 250)])
+        else:
+            self.__snow = False
 
     def _startup(self):
         """Draw init image on screen"""
@@ -87,7 +96,7 @@ class Watch(Applet):
             if cooldown < 0:
                 print("cooldown is negative!")
                 cooldown = 0.001
-            sleep(cooldown)
+            self._exit.wait(timeout=cooldown)
 
     def __routine(self):
         """Applet's routine"""
@@ -98,7 +107,27 @@ class Watch(Applet):
         drawer = self._drawer
         time = self.__timer()
 
-        drawer.draw_image([0, 90], [320, 85], self.__background_crop)
+        if self.__snow:
+            background = self.__background
+            flake_img = self.__snow
+
+            drawer.draw_image([0, 0], [320, 240], background)
+            for flake in self.__snow_pos:
+                flake[0] = flake[0] + random.randint(-1, 1)
+                flake[1] = flake[1] + random.randint(1, 5)
+                if flake[0] > 330:
+                    flake[0] = flake[0] % 25 * -1
+                if flake[1] > 250:
+                    flake[1] = flake[1] % 25 * -1
+                if flake[0] < -10:
+                    flake[0] = flake[0] % 25 + 310
+                if flake[1] < -10:
+                    flake[1] = flake[1] % 25 + 230
+                drawer.draw_image(flake, [25, 25], flake_img)
+        else:
+            background_crop = self.__background_crop
+            drawer.draw_image([0, 90], [320, 85], background_crop)
+
         drawer.draw_rectangle([0, 90], [320, 85], self.__bg_color)
         drawer.draw_textline([32, 103], 72, time)
 
