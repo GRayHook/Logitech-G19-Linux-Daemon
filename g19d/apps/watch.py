@@ -21,10 +21,6 @@ class Watch(Applet):
         self.name = "Watch"
         self.__load_config()
 
-        self.__background = Img.open(self.__background_path)
-        self.__background = self.__background.resize((320, 240), Img.CUBIC)
-        self.__background_crop = self.__background.crop((0, 90, 320, 175))
-
         self.__timer = Watch.get_time
         self.__time_offset = datetime.datetime.now()
         self.__freeze_delta = datetime.timedelta(0, 0, 0)
@@ -54,6 +50,10 @@ class Watch(Applet):
 
     def _startup(self):
         """Draw init image on screen"""
+        self.__background = Img.open(self.__background_path)
+        self.__background = self.__background.resize((320, 240), Img.CUBIC)
+        self.__background_crop = self.__background.crop((0, 90, 320, 175))
+
         drawer = self._drawer
         time = datetime.datetime.now().strftime("%H:%M:%S")
 
@@ -151,8 +151,5 @@ class Watch(Applet):
 
     def update_config(self):
         self.__load_config()
-        self.__background = Img.open(self.__background_path)
-        self.__background = self.__background.resize((320, 240), Img.CUBIC)
-        self.__background_crop = self.__background.crop((0, 90, 320, 175))
         self.__need_startup.set()
 
